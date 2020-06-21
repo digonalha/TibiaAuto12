@@ -32,6 +32,11 @@ class AutoLogin:
                 CheckingButtons()
                 ButtonEnabled.configure(text='AutoLogin: OFF', relief=RAISED, bg=rgb((127, 17, 8)))
 
+        def GenerateAuthToken(secret):
+            Hmac = hmac.new(base64.b32decode(secret, True), struct.pack(">Q", int(time.time())//30), hashlib.sha1).digest()
+            Session = Hmac[19] & 15
+            return (struct.unpack(">I", Hmac[Session:Session+4])[0] & 0x7fffffff) % 1000000
+
         def ScanAutoLogin():
             global EnabledAutoLogin
             if EnabledAutoLogin:
@@ -41,10 +46,8 @@ class AutoLogin:
                     login = pyautogui.locateOnScreen('images/TibiaSettings/Login.png', grayscale=True, confidence=0.8)
                     print("Your Login location is:", login)
                     Login[0], Login[1] = pyautogui.center(login)
-                    global username_value
-                    username_value = username.get()
-                    global passwd_value
-                    passwd_value = passwd.get()
+                    global username_value = username.get()
+                    global passwd_value = passwd.get()
                     time.sleep(1)
                     global pass_mouse_position
                     if Login is not None:
@@ -54,16 +57,26 @@ class AutoLogin:
                         pyautogui.press('tab')
                         pyautogui.write(passwd_value, interval=0.15)
                         pyautogui.click(Login[0], Login[1])
-                        time.sleep(2)
+                        time.sleep(0.5)
                         pyautogui.press('enter')
+                        auth_token = auth.get()
+                        time.sleep(2)
                         pyautogui.moveTo(pass_mouse_position)
-                        AccountName2 = pyautogui.locateOnScreen('images/TibiaSettings/AccountName.png',
-                                                                grayscale=True,
-                                                                confidence=0.8)
+
+                        AccountName2 = pyautogui.locateOnScreen('images/TibiaSettings/AccountName.png', grayscale=True, confidence=0.8)
+
                         if AccountName2 is not None:
                             print("Error To Login !!!!")
                         else:
+                            TokenRequest = pyautogui.locateOnScreen('images/TibiaSettings/TokenRequest.png', grayscale=True, confidence=0.8) 
+
+                            if TokenRequest is not None:
+                                pyautogui.write(GenerateAuthToken(auth_token), interval=0.15)
+                                time.sleep(0.5)
+                                pyautogui.press('enter')
+
                             print("You Are Logged")
+
                     else:
                         print("Error To Locate Login Button!")
                 else:
@@ -71,6 +84,8 @@ class AutoLogin:
 
             if EnabledAutoLogin:
                 root.after(3000, ScanAutoLogin)
+
+
 
         CheckPrint = tk.BooleanVar()
         LowMana = tk.BooleanVar()
@@ -107,11 +122,13 @@ class AutoLogin:
                 passwd_label.configure(state='disabled')
                 username.configure(state='disabled')
                 passwd.configure(state='disabled')
+                auth.configure(state='disabled')
             else:
                 username_label.configure(state='normal')
                 passwd_label.configure(state='normal')
                 username.configure(state='normal')
                 passwd.configure(state='normal')
+                auth.configure(state='normal')
 
         CheckingButtons()
 
